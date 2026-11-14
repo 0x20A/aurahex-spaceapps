@@ -1,3 +1,5 @@
+import os
+import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -5,12 +7,21 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from core_etl import process_fire_data
 from download_data import download_and_merge_firms
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("\n⏰ Arrancando Motor de Automatización (Cron)...")
-    
-    # Descarga inicial al arrancar la API
-    download_and_merge_firms()
+    csv_path = os.path.join(BASE_DIR, "real_fires.csv")
+
+    # Solo descarga al arrancar si el archivo no existe o tiene más de 12 horas de antigüedad
+    if not os.path.exists(csv_path) or (time.time() - os.path.getmtime(csv_path)) > 43200:
+        download_and_merge_firms()
+    else:
+        print("✅ 'real_fires.csv' ya está actualizado localmente. Saltando descarga inicial.")
+
+    # Pre-calentar la resolución inicial (Nivel 5) en memoria para respuesta inmediata
+    process_fire_data("real_fires.csv", resolution=5)
     
     # Programar actualización automática cada 24 horas
     scheduler = BackgroundScheduler()

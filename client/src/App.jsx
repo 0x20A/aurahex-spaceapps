@@ -1,4 +1,4 @@
-import MapLoading from './MapLoading.jsx';
+import MapLoading from "./MapLoading.jsx";
 import React, { useState, useEffect, useMemo } from "react";
 import DeckGL from "@deck.gl/react";
 import { H3HexagonLayer, TileLayer } from "@deck.gl/geo-layers";
@@ -104,13 +104,15 @@ export default function App() {
   // 3. Descarga dinámica desde FastAPI según la resolución H3 activa
   useEffect(() => {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
+    const timeout = setTimeout(() => controller.abort(), 45000);
     let active = true;
     setIsRecalculating(true);
     setDataError(false);
     fetch(
       `http://localhost:8000/api/fires/harmonized?resolution=${h3Resolution}`,
-      { signal: controller.signal },
+      {
+        signal: controller.signal,
+      },
     )
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -118,7 +120,8 @@ export default function App() {
       })
       .then((data) => {
         if (!active) return;
-        if (!Array.isArray(data)) throw new Error("Respuesta inválida de la API");
+        if (!Array.isArray(data))
+          throw new Error("Respuesta inválida de la API");
         setFireData(data);
         const dates = [...new Set(data.map((d) => d.acq_date))].sort();
         setUniqueDates(dates);
@@ -299,15 +302,20 @@ export default function App() {
 
           <div className="mt-3 flex items-center justify-between bg-gray-800/70 px-3 py-2 rounded-lg border border-gray-700/60">
             {dataError ? (
-              <span role="status" className="text-xs font-semibold text-orange-300">Datos no disponibles</span>
-            ) : (
-            <div className="flex items-center gap-2 text-xs font-semibold">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+              <span
+                role="status"
+                className="text-xs font-semibold text-orange-300"
+              >
+                Datos no disponibles
               </span>
-              <span className="text-green-400">API SINCRONIZADA</span>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs font-semibold">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                </span>
+                <span className="text-green-400">API SINCRONIZADA</span>
+              </div>
             )}
             <span className="text-xs font-mono text-gray-300">
               {filteredData.length} celdas
@@ -370,10 +378,10 @@ export default function App() {
           </div>
         </div>
 
-        {/* Línea de Tiempo (Time-Lapse 7 días) */}
+        {/* Línea de Tiempo (Time-Lapse 30 días) */}
         <div className="bg-gray-800/90 p-3.5 rounded-xl border border-gray-700">
           <h3 className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-2.5">
-            Evolución Temporal (7 Días)
+            Evolución Temporal ({uniqueDates.length || 30} Días)
           </h3>
           <div className="flex items-center gap-3">
             <button
