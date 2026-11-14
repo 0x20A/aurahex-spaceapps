@@ -19,8 +19,22 @@ def process_fire_data(csv_filename="real_fires.csv", resolution=6):
     # --- MÓDULO DE LIMPIEZA ROBUSTO (Data Cleaning) ---
     df = df.dropna(subset=['latitude', 'longitude'])
     
-    if 'instrument' not in df.columns:
-        df['instrument'] = df.get('satellite', 'Desconocido').astype(str)
+    # Normalizar el identificador de satélite para distinguir MODIS, NOAA-20 y NOAA-21
+    raw_sat = df.get('satellite', df.get('instrument', 'Desconocido')).astype(str).str.strip().str.upper()
+    sat_map = {
+        'T': 'MODIS',
+        'A': 'MODIS',
+        'TERRA': 'MODIS',
+        'AQUA': 'MODIS',
+        'MODIS': 'MODIS',
+        '1': 'NOAA-20',
+        'N20': 'NOAA-20',
+        'J1': 'NOAA-20',
+        '2': 'NOAA-21',
+        'N21': 'NOAA-21',
+        'J2': 'NOAA-21'
+    }
+    df['instrument'] = raw_sat.map(lambda x: sat_map.get(x, x))
         
     if 'brightness' not in df.columns:
         df['brightness'] = df.get('bright_ti4', 0)
