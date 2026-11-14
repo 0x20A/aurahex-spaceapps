@@ -61,7 +61,11 @@ export default function App() {
   const [cameraZoom, setCameraZoom] = useState(4.5);
 
   // Filtros interactivos
-  const [activeSats, setActiveSats] = useState({ MODIS: true, VIIRS: true });
+  const [activeSats, setActiveSats] = useState({
+    MODIS: true,
+    NOAA20: true,
+    NOAA21: true,
+  });
   const [activeThreats, setActiveThreats] = useState({
     EXTREMO: true,
     ALTO: true,
@@ -160,18 +164,30 @@ export default function App() {
     return fireData.filter((d) => {
       const instrumentsStr = String(d.instruments).toUpperCase();
       const hasModis =
-        instrumentsStr.includes("T") ||
-        instrumentsStr.includes("A") ||
-        instrumentsStr.includes("MODIS");
-      const hasViirs =
-        instrumentsStr.includes("N") ||
-        instrumentsStr.includes("1") ||
-        instrumentsStr.includes("VIIRS");
+        instrumentsStr.includes("MODIS") ||
+        instrumentsStr === "T" ||
+        instrumentsStr === "A" ||
+        instrumentsStr.includes("TERRA") ||
+        instrumentsStr.includes("AQUA");
+      const hasNoaa20 =
+        instrumentsStr.includes("NOAA-20") ||
+        instrumentsStr.includes("N20") ||
+        instrumentsStr
+          .split(",")
+          .map((s) => s.trim())
+          .includes("1");
+      const hasNoaa21 =
+        instrumentsStr.includes("NOAA-21") ||
+        instrumentsStr.includes("N21") ||
+        instrumentsStr
+          .split(",")
+          .map((s) => s.trim())
+          .includes("2");
 
-      let satMatch = false;
-      if (activeSats.MODIS && activeSats.VIIRS) satMatch = true;
-      else if (activeSats.MODIS && !activeSats.VIIRS) satMatch = hasModis;
-      else if (!activeSats.MODIS && activeSats.VIIRS) satMatch = hasViirs;
+      const satMatch =
+        (activeSats.MODIS && hasModis) ||
+        (activeSats.NOAA20 && hasNoaa20) ||
+        (activeSats.NOAA21 && hasNoaa21);
 
       const isExtremo = d.total_frp > 150;
       const isAlto = d.total_frp > 50 && d.total_frp <= 150;
@@ -388,32 +404,53 @@ export default function App() {
         {/* Filtro Satelital */}
         <div>
           <h3 className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-2">
-            Constelación Satelital
+            Constelación Satelital (3 Fuentes)
           </h3>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             <button
               onClick={() =>
                 setActiveSats({ ...activeSats, MODIS: !activeSats.MODIS })
               }
-              className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors flex-1 ${
+              className={`px-2 py-2 rounded-lg text-[11px] font-bold transition-colors ${
                 activeSats.MODIS
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-gray-800 text-gray-500 border border-gray-700"
               }`}
             >
-              MODIS (Terra/Aqua)
+              MODIS
+              <span className="block text-[9px] font-normal opacity-80">
+                Terra / Aqua
+              </span>
             </button>
             <button
               onClick={() =>
-                setActiveSats({ ...activeSats, VIIRS: !activeSats.VIIRS })
+                setActiveSats({ ...activeSats, NOAA20: !activeSats.NOAA20 })
               }
-              className={`px-3 py-2 rounded-lg text-xs font-bold transition-colors flex-1 ${
-                activeSats.VIIRS
+              className={`px-2 py-2 rounded-lg text-[11px] font-bold transition-colors ${
+                activeSats.NOAA20
                   ? "bg-purple-600 text-white shadow-md"
                   : "bg-gray-800 text-gray-500 border border-gray-700"
               }`}
             >
-              VIIRS (NOAA-20)
+              VIIRS N20
+              <span className="block text-[9px] font-normal opacity-80">
+                NOAA-20
+              </span>
+            </button>
+            <button
+              onClick={() =>
+                setActiveSats({ ...activeSats, NOAA21: !activeSats.NOAA21 })
+              }
+              className={`px-2 py-2 rounded-lg text-[11px] font-bold transition-colors ${
+                activeSats.NOAA21
+                  ? "bg-fuchsia-600 text-white shadow-md"
+                  : "bg-gray-800 text-gray-500 border border-gray-700"
+              }`}
+            >
+              VIIRS N21
+              <span className="block text-[9px] font-normal opacity-80">
+                NOAA-21
+              </span>
             </button>
           </div>
         </div>
