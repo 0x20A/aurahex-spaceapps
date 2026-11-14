@@ -1,22 +1,30 @@
-# --- PYTHON / BACKEND ---
-venv/
-__pycache__/
-*.py[cod]
-*$py.class
-.env
+server/.json
 
-# Ignorar los CSV pesados que se descargan automáticamente (el servidor los baja solo)
-server/real_fires.csv
-server/*.json
+==========================================
 
-# --- NODE / REACT / FRONTEND ---
+⚛️ NODE / REACT / VITE (client/)
+
+==========================================
+
 node_modules/
 dist/
 dist-ssr/
-*.local
+.vite/
+.local
 .env.local
+.env..local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# --- SISTEMA Y EDITORES ---
+==========================================
+
+💻 SISTEMA OPERATIVO Y EDITORES
+
+==========================================
+
 .DS_Store
 Thumbs.db
+desktop.ini
 .vscode/
+.idea/
