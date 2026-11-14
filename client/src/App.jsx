@@ -1,3 +1,4 @@
+import MapLoading from './MapLoading.jsx';
 import React, { useState, useEffect, useMemo } from "react";
 import DeckGL from "@deck.gl/react";
 import { H3HexagonLayer, TileLayer } from "@deck.gl/geo-layers";
@@ -44,6 +45,8 @@ const INITIAL_VIEW_STATE = {
 };
 
 export default function App() {
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [dataError, setDataError] = useState(false);
   const [fireData, setFireData] = useState([]);
   const [uniqueDates, setUniqueDates] = useState([]);
   const [currentDateIndex, setCurrentDateIndex] = useState(0);
@@ -100,12 +103,22 @@ export default function App() {
 
   // 3. Descarga dinámica desde FastAPI según la resolución H3 activa
   useEffect(() => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    let active = true;
     setIsRecalculating(true);
+    setDataError(false);
     fetch(
       `http://localhost:8000/api/fires/harmonized?resolution=${h3Resolution}`,
+      { signal: controller.signal },
     )
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
       .then((data) => {
+        if (!active) return;
+        if (!Array.isArray(data)) throw new Error("Respuesta inválida de la API");
         setFireData(data);
         const dates = [...new Set(data.map((d) => d.acq_date))].sort();
         setUniqueDates(dates);
@@ -115,12 +128,24 @@ export default function App() {
         if (uniqueDates.length === 0 && dates.length > 0) {
           setCurrentDateIndex(dates.length - 1);
         }
-        setIsRecalculating(false);
       })
       .catch((error) => {
+        if (!active) return;
         console.error("Error al conectar con la API:", error);
+        setDataError(true);
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+        if (!active) return;
         setIsRecalculating(false);
+        setInitialLoading(false);
       });
+
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, [h3Resolution]);
 
   // 4. Reloj del Reproductor Time-Lapse
@@ -257,6 +282,8 @@ export default function App() {
     }),
   ];
 
+  if (initialLoading) return <MapLoading />;
+
   return (
     <div className="flex h-screen w-full bg-gray-950 text-white overflow-hidden font-sans">
       {/* PANEL LATERAL DE CONTROL */}
@@ -271,6 +298,9 @@ export default function App() {
           </p>
 
           <div className="mt-3 flex items-center justify-between bg-gray-800/70 px-3 py-2 rounded-lg border border-gray-700/60">
+            {dataError ? (
+              <span role="status" className="text-xs font-semibold text-orange-300">Datos no disponibles</span>
+            ) : (
             <div className="flex items-center gap-2 text-xs font-semibold">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -278,6 +308,7 @@ export default function App() {
               </span>
               <span className="text-green-400">API SINCRONIZADA</span>
             </div>
+            )}
             <span className="text-xs font-mono text-gray-300">
               {filteredData.length} celdas
             </span>

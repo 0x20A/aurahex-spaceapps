@@ -1,0 +1,44 @@
+.map-loading {
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  background: #050913;
+  color: #c4d6ee;
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+.map-loading-content {
+  display: grid;
+  gap: .45rem;
+  justify-items: center;
+  font-size: .85rem;
+}
+
+.map-loading-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  color: #f3f7ff;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -.045em;
+}
+
+.map-loading-brand::before {
+  content: "";
+  width: .75rem;
+  aspect-ratio: 1;
+  background: #82baff;
+  clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0 50%);
+  animation: map-loading-pulse 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes map-loading-pulse {
+  from { opacity: .45; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-loading-brand::before { animation: none; }
+}
