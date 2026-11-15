@@ -1,11 +1,21 @@
 import { lazy, Suspense, useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { landingCopy } from './landingCopy.js'
 import './landing.css'
 
 gsap.registerPlugin(ScrollTrigger)
 
 const OrbitCanvas = lazy(() => import('./OrbitCanvas.jsx'))
+const languageKey = 'aurahex-landing-language'
+
+function getSavedLanguage() {
+  try {
+    return window.localStorage.getItem(languageKey) === 'en' ? 'en' : 'es'
+  } catch {
+    return 'es'
+  }
+}
 
 function MapLink({ className, children }) {
   return (
@@ -24,12 +34,31 @@ export default function Landing() {
   const frames = useRef({ progress: 0, render: null, rotate: null })
   const drag = useRef(null)
   const [hasRotated, setHasRotated] = useState(false)
+  const [language, setLanguage] = useState(getSavedLanguage)
+  const copy = landingCopy[language]
+  const otherLanguage = language === 'es' ? 'en' : 'es'
+
+  useLayoutEffect(() => {
+    const previousLanguage = document.documentElement.lang
+    document.documentElement.lang = language
+    return () => { document.documentElement.lang = previousLanguage }
+  }, [language])
+
+  function switchLanguage() {
+    setLanguage(otherLanguage)
+    try {
+      window.localStorage.setItem(languageKey, otherLanguage)
+    } catch {
+      // The selector still works when storage is unavailable.
+    }
+  }
 
   useLayoutEffect(() => {
     const motion = gsap.matchMedia(story.current)
 
     motion.add('(prefers-reduced-motion: no-preference)', () => {
       const frame = frames.current
+      const chapters = gsap.utils.toArray('.aura-chapter', story.current)
 
       gsap.timeline({
         defaults: { ease: 'none' },
@@ -38,13 +67,34 @@ export default function Landing() {
           start: 'top top',
           end: 'bottom bottom',
           scrub: .45,
+          snap: {
+            delay: .22,
+            duration: .28,
+            ease: 'power2.out',
+            inertia: false,
+            snapTo(progress, { start, end }) {
+              const range = end - start
+              const currentY = start + progress * range
+              let closestY = currentY
+              let closestDistance = Math.min(56, window.innerHeight * .07)
+
+              for (const chapter of chapters) {
+                const chapterY = chapter.getBoundingClientRect().top + window.scrollY
+                const distance = Math.abs(chapterY - currentY)
+                if (distance < closestDistance) {
+                  closestY = chapterY
+                  closestDistance = distance
+                }
+              }
+
+              return gsap.utils.clamp(0, 1, (closestY - start) / range)
+            },
+          },
         },
       })
         .to(frame, { progress: 3, duration: 3.13, onUpdate: () => frame.render?.(frame.progress) }, 0)
         .to('.aura-grid', { opacity: 1, duration: .36 }, 1.83)
         .to('.aura-grid', { opacity: 0, duration: .35 }, 2.75)
-
-      const chapters = gsap.utils.toArray('.aura-chapter', story.current)
 
       chapters.forEach((chapter, index) => {
         const copy = chapter.querySelector('.aura-copy')
@@ -157,12 +207,17 @@ export default function Landing() {
   return (
     <div className="aura-landing">
       <header className="aura-header">
-        <nav aria-label="Navegación principal">
+        <nav aria-label={copy.navLabel}>
           <a href="/" className="aura-wordmark">
             <img src="/aurahex-logo.svg" alt="AuraHex" width="1242" height="311" />
           </a>
-          <a href="#observe" className="aura-header-story">La misión</a>
-          <MapLink className="aura-nav-map">Abrir mapa</MapLink>
+          <a href="#observe" className="aura-header-story">{copy.mission}</a>
+          <div className="aura-header-actions">
+            <button type="button" className="aura-language" aria-label={copy.languageLabel} onClick={switchLanguage}>
+              {otherLanguage.toUpperCase()}
+            </button>
+            <MapLink className="aura-nav-map">{copy.openMap}</MapLink>
+          </div>
         </nav>
       </header>
 
@@ -181,47 +236,49 @@ export default function Landing() {
         </div>
 
         <section className="aura-chapter aura-hero">
+          <div className="aura-hero-sky" aria-hidden="true" />
           <div className="aura-copy">
-            <p className="aura-label">Observación satelital de incendios</p>
-            <h1>El fuego, visto<br />desde órbita.</h1>
-            <p>Sigue las señales térmicas que detectan los satélites y explóralas sobre un mapa 3D.</p>
+            <p className="aura-label">{copy.heroLabel}</p>
+            <h1>{copy.heroTitle[0]}<br />{copy.heroTitle[1]}</h1>
+            <p>{copy.heroDescription}</p>
           </div>
         </section>
 
         <section id="observe" className="aura-chapter aura-observe">
           <div className="aura-copy">
             <p className="aura-label">NASA Space Apps Challenge</p>
-            <h2>¿Qué es AuraHex?</h2>
-            <p>AuraHex reúne las anomalías térmicas que detectan MODIS y VIIRS sobre México y parte de Norteamérica. El mapa permite comparar dónde y cuándo se registraron las detecciones.</p>
+            <h2>{copy.missionTitle}</h2>
+            <p>{copy.missionDescription}</p>
           </div>
         </section>
 
         <section id="process" className="aura-chapter aura-surface">
           <div className="aura-copy">
-            <p className="aura-label">Análisis geoespacial</p>
-            <h2>Del dato al terreno</h2>
-            <p>Agrupamos las detecciones por fecha y celda H3 para comparar la potencia radiativa observada entre zonas.</p>
-            <p className="aura-demo-note">Demostración de celdas H3</p>
+            <p className="aura-label">{copy.processLabel}</p>
+            <h2>{copy.processTitle}</h2>
+            <p>{copy.processDescription}</p>
+            <p className="aura-demo-note">{copy.demoNote}</p>
           </div>
           <dl className="aura-telemetry">
-            <div><dt>Fuente</dt><dd>NASA FIRMS</dd></div>
-            <div><dt>Instrumentos</dt><dd>MODIS / VIIRS</dd></div>
-            <div><dt>Índice espacial</dt><dd>H3</dd></div>
+            <div><dt>{copy.source}</dt><dd>NASA FIRMS</dd></div>
+            <div><dt>{copy.instruments}</dt><dd>MODIS / VIIRS</dd></div>
+            <div><dt>{copy.spatialIndex}</dt><dd>H3</dd></div>
+            <div><dt>{copy.historyLabel}</dt><dd>{copy.history}</dd></div>
           </dl>
         </section>
 
         <section id="explore" className="aura-chapter aura-surface aura-final">
           <div className="aura-copy">
-            <p className="aura-label">Mapa interactivo</p>
-            <h2>Explora</h2>
-            <p>Recorre siete días de observaciones, filtra por instrumento y cambia la escala con el zoom.</p>
-            <MapLink className="aura-button">Abrir el mapa interactivo</MapLink>
+            <p className="aura-label">{copy.exploreLabel}</p>
+            <h2>{copy.exploreTitle}</h2>
+            <p>{copy.exploreDescription}</p>
+            <MapLink className="aura-button">{copy.exploreLink}</MapLink>
           </div>
           <div
             className="aura-globe-control"
             role="group"
             tabIndex={0}
-            aria-label="Girar globo. Usa las flechas del teclado o arrastra."
+            aria-label={copy.globeControl}
             onPointerDown={(event) => {
               if (event.button !== 0 || !event.isPrimary) return
               event.currentTarget.setPointerCapture(event.pointerId)
@@ -251,7 +308,11 @@ export default function Landing() {
         </section>
       </main>
 
-      <div className="aura-imagery"><a href="https://science.nasa.gov/earth/earth-observatory/the-blue-marble-true-color-global-imagery-at-1km-resolution/">Globo · NASA Blue Marble</a><span aria-hidden="true"> / </span><a href="https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9">Imagen regional · Esri, Maxar, Earthstar Geographics y comunidad GIS</a></div>
+      <div className="aura-imagery">
+        <a href="https://science.nasa.gov/earth/earth-observatory/the-blue-marble-true-color-global-imagery-at-1km-resolution/">{copy.globeCredit}</a>
+        <span aria-hidden="true"> / </span>
+        <a href="https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9">{copy.regionalCredit}</a>
+      </div>
 
     </div>
   )

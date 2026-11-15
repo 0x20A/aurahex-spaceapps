@@ -25,7 +25,7 @@
   font-size: .85rem;
 }
 
-.aura-header a { pointer-events: auto; }
+.aura-header :is(a, button) { pointer-events: auto; }
 
 .aura-header-story {
   color: #fff;
@@ -51,13 +51,28 @@
   height: auto;
 }
 
-.aura-nav-map {
+.aura-header-actions {
+  display: flex;
+  align-items: center;
   justify-self: end;
+  gap: .55rem;
+}
+
+.aura-language,
+.aura-nav-map {
   border: 1px solid #8db8ec54;
-  padding: .45rem .85rem;
   background: #0b1525b3;
   white-space: nowrap;
 }
+
+.aura-language {
+  padding: .45rem .65rem;
+  border-radius: 999px;
+  color: #f5f8fc;
+  cursor: pointer;
+}
+
+.aura-nav-map { padding: .45rem .85rem; }
 
 .aura-story { position: relative; }
 
@@ -114,6 +129,38 @@
   justify-items: center;
   text-align: center;
   padding-bottom: 24svh;
+}
+
+.aura-hero-sky {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  pointer-events: none;
+}
+
+.aura-hero .aura-copy { position: relative; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .aura-hero-sky::before {
+    content: "";
+    position: absolute;
+    top: 13%;
+    left: 84%;
+    width: clamp(4rem, 11vw, 10rem);
+    height: 2px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, #fff, #9ed1ffba 10%, #8dafff00 100%);
+    filter: drop-shadow(0 0 4px #b1dcff);
+    opacity: 0;
+    animation: aura-shooting-star 12s linear 1s infinite;
+  }
+}
+
+@keyframes aura-shooting-star {
+  0% { opacity: 0; transform: translate(0, 0) rotate(-22deg); }
+  2% { opacity: .9; }
+  7% { opacity: .62; }
+  11%, 100% { opacity: 0; transform: translate(-33vw, 13.3vw) rotate(-22deg); }
 }
 
 .aura-landing :is(h1, h2) {
@@ -191,12 +238,15 @@
   font-weight: 700;
 }
 
-.aura-landing a:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+.aura-landing :is(a, button):focus-visible { outline: 2px solid white; outline-offset: 3px; }
 
 @media (max-width: 650px) {
-  .aura-header nav { gap: .65rem; }
+  .aura-header { padding-inline: 1rem; }
+  .aura-header nav { grid-template-columns: 1fr auto; gap: .5rem; }
   .aura-header-story { display: none; }
-  .aura-nav-map { grid-column: 3; }
+  .aura-wordmark { width: clamp(5.75rem, 29vw, 7.5rem); }
+  .aura-header-actions { gap: .35rem; }
+  .aura-nav-map { gap: .5rem; padding-inline: .65rem; }
   .aura-surface { grid-template-columns: 1fr; align-content: start; }
 }
 
