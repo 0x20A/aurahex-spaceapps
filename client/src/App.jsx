@@ -1,4 +1,5 @@
 import MapLoading from "./MapLoading.jsx";
+import { downloadFireCsv } from "./fireCsv.js";
 import React, { useState, useEffect, useMemo } from "react";
 import DeckGL from "@deck.gl/react";
 import { H3HexagonLayer, TileLayer } from "@deck.gl/geo-layers";
@@ -47,7 +48,8 @@ const INITIAL_VIEW_STATE = {
 export default function App() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [dataError, setDataError] = useState(false);
-  const [fireData, setFireData] = useState([]);
+  const [{ cells: fireData, resolution: loadedResolution }, setFireData] =
+    useState({ cells: [], resolution: null });
   const [uniqueDates, setUniqueDates] = useState([]);
   const [currentDateIndex, setCurrentDateIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -122,7 +124,7 @@ export default function App() {
         if (!active) return;
         if (!Array.isArray(data))
           throw new Error("Respuesta inválida de la API");
-        setFireData(data);
+        setFireData({ cells: data, resolution: h3Resolution });
         const dates = [...new Set(data.map((d) => d.acq_date))].sort();
         setUniqueDates(dates);
         setCurrentDateIndex((prev) =>
@@ -163,6 +165,7 @@ export default function App() {
   }, [isPlaying, uniqueDates.length]);
 
   // 5. Filtrado espacial y temporal
+  const currentDate = uniqueDates[currentDateIndex];
   const filteredData = useMemo(() => {
     return fireData.filter((d) => {
       const instrumentsStr = String(d.instruments).toUpperCase();
@@ -201,12 +204,18 @@ export default function App() {
       if (activeThreats.ALTO && isAlto) threatMatch = true;
       if (activeThreats.MODERADO && isModerado) threatMatch = true;
 
-      const currentDate = uniqueDates[currentDateIndex];
       const dateMatch = currentDate ? d.acq_date === currentDate : true;
 
       return satMatch && threatMatch && dateMatch;
     });
-  }, [fireData, activeSats, activeThreats, uniqueDates, currentDateIndex]);
+  }, [fireData, activeSats, activeThreats, currentDate]);
+
+  const exportPending =
+    isRecalculating ||
+    loadedResolution !== h3Resolution ||
+    targetResolution !== h3Resolution;
+  const canExportCsv =
+    !dataError && !exportPending && Boolean(currentDate) && filteredData.length > 0;
 
   // 6. Estadísticas para la gráfica de anillo
   const chartData = useMemo(() => {
@@ -321,6 +330,19 @@ export default function App() {
               {filteredData.length} celdas
             </span>
           </div>
+          <button
+            type="button"
+            disabled={!canExportCsv}
+            onClick={() => downloadFireCsv(filteredData, loadedResolution, currentDate)}
+            className="mt-2 w-full rounded-lg border border-orange-500/50 bg-orange-600/20 px-3 py-2 text-xs font-bold text-orange-200 transition-colors enabled:cursor-pointer enabled:hover:bg-orange-600/35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span aria-hidden="true">⬇️ </span>Exportar CSV Filtrado
+          </button>
+          {!dataError && !canExportCsv && (
+            <p className="mt-1 text-[11px] text-gray-400">
+              {exportPending ? "Actualizando resolución H3…" : "No hay celdas para exportar con estos filtros."}
+            </p>
+          )}
         </div>
 
         {/* Selector de Mapa Base */}
@@ -392,7 +414,7 @@ export default function App() {
             </button>
             <div className="flex-1">
               <div className="text-base font-bold text-orange-300 font-mono">
-                {uniqueDates[currentDateIndex] || "Cargando..."}
+                {currentDate || "Cargando..."}
               </div>
               <input
                 type="range"
