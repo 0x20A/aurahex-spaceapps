@@ -1,3 +1,22 @@
+🐍 PYTHON / BACKEND (server/)
+
+==========================================
+
+venv/
+.venv/
+env/
+pycache/
+server/pycache/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.env
+server/.env
+
+Datos satelitales y JSON generados dinámicamente (la API los descarga sola)
+
+server/.csv
 server/.json
 
 ==========================================
