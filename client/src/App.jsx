@@ -293,8 +293,8 @@ export default function App() {
       <div className="w-96 bg-gray-900/95 p-5 flex flex-col gap-4 z-10 shadow-2xl overflow-y-auto border-r border-gray-800">
         {/* Encabezado */}
         <div>
-          <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600">
-            AuraHex
+          <h1>
+            <img src="/aurahex-logo.svg" alt="AuraHex" width="1242" height="311" className="block h-auto w-48" />
           </h1>
           <p className="text-gray-400 text-xs mt-0.5">
             Plataforma de Armonización Satelital H3
